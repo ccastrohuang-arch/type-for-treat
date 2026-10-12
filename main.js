@@ -111,9 +111,49 @@
   // so the shader / GPU features of the game match the runtime that was tested.
   rive.RuntimeLoader.setWasmUrl("vendor/rive.wasm?v=2.44.2");
 
-  var r; // the Rive instance
+  var r = null; // the Rive instance (created once game.riv has been downloaded)
+  var loaded = false;
+  var startLabel = startOverlay.querySelector("p");
+
+  function setStartLabel(text) { if (startLabel) startLabel.textContent = text; }
+
+  // Download game.riv ourselves so the player sees progress (it is ~20 MB) and cannot
+  // "click to play" before the game exists.
+  setStartLabel("Loading… 0%");
+  startOverlay.style.cursor = "progress";
+  function download(url, onProgress) {
+    return window.fetch(url).then(function (res) {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      var total = parseInt(res.headers.get("Content-Length") || "0", 10);
+      if (!res.body || !res.body.getReader) return res.arrayBuffer();
+      var reader = res.body.getReader(), chunks = [], got = 0;
+      function pump() {
+        return reader.read().then(function (step) {
+          if (step.done) {
+            var out = new Uint8Array(got), pos = 0;
+            for (var i = 0; i < chunks.length; i++) { out.set(chunks[i], pos); pos += chunks[i].length; }
+            return out.buffer;
+          }
+          chunks.push(step.value);
+          got += step.value.length;
+          onProgress(got, total);
+          return pump();
+        });
+      }
+      return pump();
+    });
+  }
+  download(RIV, function (got, total) {
+    setStartLabel(total ? "Loading… " + Math.min(99, Math.floor(got / total * 100)) + "%"
+                        : "Loading… " + (got / 1048576).toFixed(1) + " MB");
+  }).then(startRive, function () {
+    fail("The game could not be downloaded. Check your connection and reload the page.");
+  });
+
+  function startRive(buffer) {
+  setStartLabel("Starting…");
   r = new rive.Rive({
-    src: RIV,
+    buffer: buffer,
     canvas: canvas,
     artboard: "Game",
     stateMachine: "Game SM",
@@ -127,6 +167,11 @@
       var vmi = r.viewModelInstance;
       if (!vmi) { fail("The game file loaded without its data. Please reload the page."); return; }
       bindProperties(vmi);
+      loaded = true;
+      window.setTimeout(function () {
+        setStartLabel("Click to play");
+        startOverlay.style.cursor = "pointer";
+      }, 400); // let the first frames draw behind the overlay
     },
     onLoadError: function () {
       fail("The game could not be loaded. If you opened index.html by double-clicking it, " +
@@ -135,8 +180,9 @@
   });
 
   window.tft = { rive: r, props: props }; // handy for debugging in the browser console
+  }
 
-  function resize() { r.resizeDrawingSurfaceToCanvas(); }
+  function resize() { if (r) r.resizeDrawingSurfaceToCanvas(); }
   window.addEventListener("resize", resize);
   window.addEventListener("pagehide", saveNow);
   document.addEventListener("visibilitychange", function () { if (document.hidden) saveNow(); });
@@ -144,6 +190,7 @@
   // A first click is needed anyway: browsers only allow sound after a click or key press,
   // and the canvas must have keyboard focus for the typing and arrow keys.
   startOverlay.addEventListener("click", function () {
+    if (!loaded) return; // still downloading / starting
     startOverlay.classList.add("hidden");
     canvas.focus();
     resize();
