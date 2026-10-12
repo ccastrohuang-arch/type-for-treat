@@ -12,11 +12,12 @@
              width: min(100vw, 177.78vh); height: min(56.25vw, 100vh); background: #281832; }
     canvas { width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
     #start { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 16px;
-             align-items: center; justify-content: center; background: rgba(20, 12, 28, .88);
-             cursor: pointer; text-align: center; }
+             align-items: center; justify-content: center; background: #140c1c; z-index: 5;
+             cursor: pointer; text-align: center; transition: opacity .9s ease, visibility 0s linear 0s; }
     #start h1 { margin: 0; font-size: clamp(28px, 6vw, 72px); }
     #start p  { margin: 0; font-size: clamp(14px, 2vw, 24px); opacity: .85; }
-    #start.hidden { display: none; }
+    #start.hidden { opacity: 0; visibility: hidden; pointer-events: none;
+                    transition: opacity .9s ease, visibility 0s linear .9s; }
     #error { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
              padding: 24px; text-align: center; background: #140c1c; }
     #reset { position: fixed; right: 8px; bottom: 6px; font-size: 12px; opacity: .45;
@@ -32,6 +33,6 @@
   </div>
   <button id="reset" title="Erase candies, highscores and purchases saved in this browser">Reset saved progress</button>
   <script src="vendor/rive.js?v=2.44.2"></script>
-  <script src="main.js?v=4"></script>
+  <script src="main.js?v=5"></script>
 </body>
 </html>

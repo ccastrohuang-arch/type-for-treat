@@ -163,7 +163,7 @@
     layout: new rive.Layout({ fit: rive.Fit.Contain, alignment: rive.Alignment.Center }),
     focusOptions: { allowFocusInterrupt: true },
     onLoad: function () {
-      r.resizeDrawingSurfaceToCanvas();
+      resize();
       var vmi = r.viewModelInstance;
       if (!vmi) { fail("The game file loaded without its data. Please reload the page."); return; }
       bindProperties(vmi);
@@ -182,7 +182,14 @@
   window.tft = { rive: r, props: props }; // handy for debugging in the browser console
   }
 
-  function resize() { if (r) r.resizeDrawingSurfaceToCanvas(); }
+  // Cap the drawing surface at ~1920 px wide (1.5x on a retina screen at most). A 4096 px wide
+  // surface is heavy on some graphics cards and can leave parts of the scene undrawn.
+  function resize() {
+    if (!r) return;
+    var w = Math.max(1, canvas.getBoundingClientRect().width);
+    var dpr = Math.min(window.devicePixelRatio || 1, 1.5, Math.max(1, 1920 / w));
+    r.resizeDrawingSurfaceToCanvas(dpr);
+  }
   window.addEventListener("resize", resize);
   window.addEventListener("pagehide", saveNow);
   document.addEventListener("visibilitychange", function () { if (document.hidden) saveNow(); });
