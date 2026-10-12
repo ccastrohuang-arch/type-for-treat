@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Type for Treat</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #140c1c; overflow: hidden;
+                 font-family: system-ui, sans-serif; color: #f7ebd3; }
+    /* The game is 16:9. The stage is the largest 16:9 box that fits the window. */
+    #stage { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+             width: min(100vw, 177.78vh); height: min(56.25vw, 100vh); background: #281832; }
+    canvas { width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
+    #start { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 16px;
+             align-items: center; justify-content: center; background: rgba(20, 12, 28, .88);
+             cursor: pointer; text-align: center; }
+    #start h1 { margin: 0; font-size: clamp(28px, 6vw, 72px); }
+    #start p  { margin: 0; font-size: clamp(14px, 2vw, 24px); opacity: .85; }
+    #start.hidden { display: none; }
+    #error { position: absolute; inset: 0; display: none; align-items: center; justify-content: center;
+             padding: 24px; text-align: center; background: #140c1c; }
+    #reset { position: fixed; right: 8px; bottom: 6px; font-size: 12px; opacity: .45;
+             color: inherit; background: none; border: 0; cursor: pointer; }
+    #reset:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <canvas id="game" tabindex="0"></canvas>
+    <div id="start"><h1>Type for Treat</h1><p>Click to play</p></div>
+    <div id="error"></div>
+  </div>
+  <button id="reset" title="Erase candies, highscores and purchases saved in this browser">Reset saved progress</button>
+  <script src="vendor/rive.js?v=2.44.2"></script>
+  <script src="main.js?v=3"></script>
+</body>
+</html>
