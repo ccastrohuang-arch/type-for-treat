@@ -111,6 +111,46 @@
   // so the shader / GPU features of the game match the runtime that was tested.
   rive.RuntimeLoader.setWasmUrl("vendor/rive.wasm?v=2.44.2");
 
+  // ----- GPU effects (fog, lantern glow, fireflies) -----
+  // They need a "GPU canvas", which some browsers/graphics drivers cannot do (Firefox, some phones):
+  // there the whole scene stays black. So: use it only where it works, and when it fails fall back
+  // to the plain renderer (no effects, but the game is fully playable). Reload with ?gpu=1 to retry
+  // the effects, or ?gpu=0 to force them off.
+  var GPU_KEY = "typeForTreat.gpu";
+  function decideGpu() {
+    var q = /[?&]gpu=([01])/.exec(window.location.search);
+    try {
+      if (q) {
+        if (q[1] === "1") window.localStorage.removeItem(GPU_KEY); else window.localStorage.setItem(GPU_KEY, "off");
+        return q[1] === "1" && canDoGpu();
+      }
+      if (window.localStorage.getItem(GPU_KEY) === "off") return false;
+    } catch (e) {}
+    return canDoGpu();
+  }
+  function canDoGpu() {
+    try {
+      var gl = document.createElement("canvas").getContext("webgl2");
+      return !!(gl && gl.getExtension("EXT_color_buffer_float") && gl.getExtension("EXT_color_buffer_half_float"));
+    } catch (e) { return false; }
+  }
+  var gpuMode = decideGpu();
+  var switching = false;
+  (function watchGpuErrors() {
+    var original = console.error;
+    console.error = function () {
+      try {
+        var msg = Array.prototype.join.call(arguments, " ");
+        if (gpuMode && !switching && /rive ore|framebuffer incomplete/i.test(msg)) {
+          switching = true;
+          try { window.localStorage.setItem(GPU_KEY, "off"); } catch (e) {}
+          window.location.replace(window.location.pathname); // reload without the GPU effects
+        }
+      } catch (e) {}
+      return original.apply(console, arguments);
+    };
+  })();
+
   var r = null; // the Rive instance (created once game.riv has been downloaded)
   var loaded = false;
   var startLabel = startOverlay.querySelector("p");
@@ -159,7 +199,7 @@
     stateMachine: "Game SM",
     autoplay: true,
     autoBind: true,
-    enableGPUCanvas: true, // needed for the game's shader effects (fog, lantern glow, fireflies)
+    enableGPUCanvas: gpuMode, // needed for the game's shader effects (fog, lantern glow, fireflies)
     layout: new rive.Layout({ fit: rive.Fit.Contain, alignment: rive.Alignment.Center }),
     focusOptions: { allowFocusInterrupt: true },
     onLoad: function () {
